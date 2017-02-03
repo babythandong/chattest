@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>Document</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <style>
+        body {
+            margin-top: 10px
+        }
+        
+        #messageArea {
+            display: none
+        }
+        
+        #error {
+            display: none
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div id="error" class="alert alert-danger"></div>
+        <div id="userFormArea" class="row">
+            <form action="" id="userForm">
+                <div class="form-group">
+                    <label for="">Enter Username</label>
+                    <input type="text" class="form-control" id="username">
+                    <br>
+                    <input type="submit" class="btn btn-primary">
+                </div>
+            </form>
+        </div>
+        <div id="messageArea" class="row">
+            <div class="col-md-4">
+                <div class="well">
+                    <label for="">UserOnline</label>
+                    <ul class="list-group" id="users"></ul>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="chat" id="chat"></div>
+                <form id="mesageForm">
+                    <div class="form-group">
+                        <label for="">Enter Message</label>
+                        <input type="text" class="form-control" id="message" placeholder="Enter message..."><br>
+                        <input type="submit" class="btn btn-primary" value="Send Message">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function() {
+            var socket = io.connect();
+            var $userFormArea = $('#userFormArea');
+            var $userForm = $('#userForm');
+            var $username = $('#username');
+            var $messageArea = $('#messageArea');
+            var $users = $('#users');
+            var $chat = $('#chat');
+            var $message = $('#message');
+            var $mesageForm = $('#mesageForm');
+            var $error = $('#error');
+            $userForm.submit(function(e) {
+                e.preventDefault();
+                socket.emit('new_user', $username.val(), function(data) {
+                    if (data) {
+                        $userFormArea.hide();
+                        $messageArea.show();
+                    }
+                });
+                $username.val('');
+            });
+            socket.on('list_user', function(data) {
+                console.log(data);
+                var html = '';
+                for (i = 0; i < data.length; i++) {
+                    html += '<li class="list-group-item">' + data[i] + '</li>';
+                }
+                $users.html(html);
+            });
+            $mesageForm.submit(function(e) {
+                e.preventDefault();
+                socket.emit('send_message', $message.val());
+                $message.val('');
+            });
+            socket.on('new_message', function(data) {
+                $chat.append('<strong>' + data.nick + '</strong> : ' + data.msg + '<br>');
+            });
+            socket.on('error_message', function(data) {
+                $error.show();
+                $error.append('The ' + data + ' is already taken');
+            })
+        });
+    </script>
+</body>
+
+</html>
